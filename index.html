@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A.R.I.E.L — Assistente de Respostas Inteligentes com Execução Local</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red:     #e63329;
+      --red-dim: #8c1c18;
+      --gold:    #c9a227;
+      --dark:    #080a0c;
+      --darker:  #040507;
+      --panel:   #0d1117;
+      --panel2:  #111820;
+      --text:    #cdd6f4;
+      --muted:   #6e7a8a;
+      --border:  rgba(201,162,39,0.25);
+      --scan:    rgba(230,51,41,0.04);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--darker);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 17px;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* ── SCANLINES ── */
+    body::before {
+      content: '';
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        var(--scan) 3px,
+        var(--scan) 4px
+      );
+      z-index: 9999;
+      opacity: 0.6;
+    }
+
+    /* ── NOISE GRAIN ── */
+    body::after {
+      content: '';
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      background-size: 200px;
+      z-index: 9998;
+      opacity: 1;
+    }
+
+    /* ── UTILITIES ── */
+    .mono { font-family: 'Share Tech Mono', monospace; }
+    .orb  { font-family: 'Orbitron', sans-serif; }
+    .red  { color: var(--red); }
+    .gold { color: var(--gold); }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    section { padding: 7rem 0; }
+
+    /* ── DIVIDER LINE ── */
+    .hline {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 0;
+    }
+
+    /* ──────────────────────────────
+       NAV
+    ────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(4,5,7,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .nav-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      color: var(--red);
+    }
+
+    .nav-logo span { color: var(--gold); }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--red); }
+
+    /* ──────────────────────────────
+       HERO
+    ────────────────────────────── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      padding: 6rem 2rem 4rem;
+      overflow: hidden;
+    }
+
+    /* HEX GRID BACKGROUND */
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(230,51,41,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(230,51,41,0.05) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* GLOW ORB */
+    #hero::after {
+      content: '';
+      position: absolute;
+      top: 35%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(230,51,41,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      color: var(--red);
+      text-transform: uppercase;
+      border: 1px solid var(--red-dim);
+      padding: 0.4rem 1.2rem;
+      margin-bottom: 2rem;
+      display: inline-block;
+      position: relative;
+      z-index: 1;
+      animation: pulse-border 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: var(--red-dim); box-shadow: none; }
+      50%       { border-color: var(--red);    box-shadow: 0 0 12px rgba(230,51,41,0.35); }
+    }
+
+    .hero-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(3.5rem, 9vw, 7.5rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      line-height: 0.9;
+      color: #fff;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title .letter-a { color: var(--red); }
+
+    .hero-subtitle-full {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(0.65rem, 1.5vw, 0.9rem);
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-top: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-subtitle-full span { color: var(--gold); }
+
+    .stark-quote {
+      margin-top: 3rem;
+      max-width: 640px;
+      border-left: 3px solid var(--red);
+      padding: 1rem 1.5rem;
+      text-align: left;
+      background: rgba(230,51,41,0.04);
+      position: relative;
+      z-index: 1;
+    }
+
+    .stark-quote blockquote {
+      font-size: 1.1rem;
+      font-style: italic;
+      color: var(--text);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    .stark-quote cite {
+      display: block;
+      margin-top: 0.6rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+      font-style: normal;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1.2rem;
+      margin-top: 2.8rem;
+      position: relative;
+      z-index: 1;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0.85rem 2rem;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: transparent;
+      color: var(--red);
+      box-shadow: 0 0 20px rgba(230,51,41,0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--gold);
+    }
+    .btn-secondary:hover {
+      border-color: var(--gold);
+      box-shadow: 0 0 14px rgba(201,162,39,0.25);
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 3rem;
+      margin-top: 4rem;
+      position: relative;
+      z-index: 1;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .hero-stat {
+      text-align: center;
+    }
+
+    .hero-stat .num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--red);
+      display: block;
+    }
+
+    .hero-stat .lbl {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ──────────────────────────────
+       SECTION TITLES
+    ────────────────────────────── */
+    .sec-header {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .sec-code {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      color: var(--red);
+      text-transform: uppercase;
+    }
+
+    .sec-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #fff;
+    }
+
+    .sec-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ──────────────────────────────
+       ABOUT / MISSION
+    ────────────────────────────── */
+    #sobre { background: var(--panel); }
+
+    .sobre-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+
+    .sobre-text h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+
+    .sobre-text p {
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.8;
+      margin-bottom: 1.4rem;
+    }
+
+    .sobre-text p strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .hud-panel {
+      border: 1px solid var(--border);
+      background: var(--darker);
+      padding: 2rem;
+      position: relative;
+    }
+
+    .hud-panel::before {
+      content: 'SYS.STATUS';
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--red);
+      position: absolute;
+      top: -0.6rem;
+      left: 1.5rem;
+      background: var(--darker);
+      padding: 0 0.5rem;
+    }
+
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .hud-row:last-child { border-bottom: none; }
+
+    .hud-key {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .hud-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+
+    .hud-val.online {
+      color: #a6e3a1;
+    }
+
+    .hud-val.online::before {
+      content: '◉ ';
+      color: #a6e3a1;
+      animation: blink 1.4s step-end infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ──────────────────────────────
+       ARQUITETURA
+    ────────────────────────────── */
+    #arquitetura { background: var(--darker); }
+
+    .arch-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .arch-layer {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 2rem;
+      align-items: center;
+      padding: 1.4rem 2rem;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+      cursor: default;
+    }
+
+    .arch-layer:last-child { border-bottom: none; }
+
+    .arch-layer:hover { background: rgba(230,51,41,0.04); }
+
+    .arch-num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: rgba(230,51,41,0.2);
+      line-height: 1;
+    }
+
+    .arch-info h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.3rem;
+    }
+
+    .arch-info p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    .arch-tech {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+
+    /* ──────────────────────────────
+       FUNCIONALIDADES
+    ────────────────────────────── */
+    #funcionalidades { background: var(--panel); }
+
+    .feat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .feat-card {
+      background: var(--panel);
+      padding: 2.2rem 1.8rem;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .feat-card:hover::after { transform: scaleX(1); }
+    .feat-card:hover { background: var(--panel2); }
+
+    .feat-icon {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--red-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.4rem;
+    }
+
+    .feat-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--red);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .feat-card h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.7rem;
+    }
+
+    .feat-card p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    /* ──────────────────────────────
+       ROADMAP
+    ────────────────────────────── */
+    #roadmap { background: var(--darker); }
+
+    .roadmap-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .roadmap-list::before {
+      content: '';
+      position: absolute;
+      left: 1.5rem;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .roadmap-item {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 2rem;
+      align-items: flex-start;
+      padding: 2rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .roadmap-item:last-child { border-bottom: none; }
+
+    .roadmap-dot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      padding-top: 0.2rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid;
+      position: relative;
+      z-index: 1;
+    }
+
+    .dot.done  { background: var(--red); border-color: var(--red); }
+    .dot.wip   { background: transparent; border-color: var(--gold); animation: pulse-dot 1.5s ease-in-out infinite; }
+    .dot.todo  { background: transparent; border-color: var(--muted); }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(201,162,39,0); }
+    }
+
+    .road-phase {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+    }
+
+    .roadmap-content h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .roadmap-content p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.63rem;
+      letter-spacing: 0.12em;
+      padding: 0.2rem 0.7rem;
+      margin-right: 0.4rem;
+      margin-top: 0.5rem;
+    }
+
+    .tag.done { background: rgba(230,51,41,0.12); color: var(--red); border: 1px solid var(--red-dim); }
+    .tag.wip  { background: rgba(201,162,39,0.1); color: var(--gold); border: 1px solid rgba(201,162,39,0.3); }
+    .tag.soon { background: rgba(110,122,138,0.1); color: var(--muted); border: 1px solid rgba(110,122,138,0.25); }
+
+    /* ──────────────────────────────
+       CRIADOR
+    ────────────────────────────── */
+    #criador { background: var(--panel); }
+
+    .creator-wrap {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .creator-card {
+      border: 1px solid var(--border);
+      background: var(--darker);
+      padding: 2.5rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .creator-card::before {
+      content: 'OPERADOR';
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      color: var(--red);
+      position: absolute;
+      top: -0.6rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--darker);
+      padding: 0 0.8rem;
+      white-space: nowrap;
+    }
+
+    .creator-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 2px solid var(--red);
+      margin: 0 auto 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(230,51,41,0.08);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--red);
+      position: relative;
+    }
+
+    .creator-avatar::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 1px dashed rgba(201,162,39,0.3);
+      animation: spin-slow 12s linear infinite;
+    }
+
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+    .creator-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+
+    .creator-role {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 1.6rem;
+    }
+
+    .creator-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .creator-link {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.2s;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .creator-link:hover {
+      border-color: var(--border);
+      color: var(--gold);
+      background: rgba(201,162,39,0.05);
+    }
+
+    .creator-link .lk-icon {
+      font-size: 1rem;
+    }
+
+    .creator-link .lk-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+    }
+
+    .creator-bio h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.06em;
+      margin-bottom: 1.2rem;
+    }
+
+    .creator-bio p {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 300;
+      line-height: 1.8;
+      margin-bottom: 1.2rem;
+    }
+
+    .creator-bio p strong { color: var(--text); font-weight: 600; }
+
+    .creator-badges {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+
+    .badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      padding: 0.3rem 0.9rem;
+      border: 1px solid;
+      text-transform: uppercase;
+    }
+
+    .badge-red  { color: var(--red);  border-color: var(--red-dim);             background: rgba(230,51,41,0.06); }
+    .badge-gold { color: var(--gold); border-color: rgba(201,162,39,0.3);        background: rgba(201,162,39,0.06); }
+    .badge-gray { color: var(--muted); border-color: rgba(110,122,138,0.3);      background: rgba(110,122,138,0.06); }
+
+    /* ──────────────────────────────
+       FOOTER
+    ────────────────────────────── */
+    footer {
+      background: var(--darker);
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      color: var(--red);
+      margin-bottom: 0.5rem;
+    }
+
+    .footer-sub {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      color: var(--muted);
+      margin-bottom: 1.8rem;
+    }
+
+    .footer-meta {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      color: rgba(110,122,138,0.5);
+    }
+
+    .footer-meta a { color: rgba(201,162,39,0.6); transition: color 0.2s; }
+    .footer-meta a:hover { color: var(--gold); }
+
+    /* ──────────────────────────────
+       MOBILE
+    ────────────────────────────── */
+    @media (max-width: 900px) {
+      .sobre-grid,
+      .creator-wrap { grid-template-columns: 1fr; gap: 3rem; }
+
+      .feat-grid { grid-template-columns: 1fr 1fr; }
+
+      .arch-layer { grid-template-columns: 50px 1fr; }
+      .arch-tech { display: none; }
+
+      .hero-stats { gap: 2rem; }
+
+      .nav-links { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .feat-grid { grid-template-columns: 1fr; }
+      section { padding: 4rem 0; }
+    }
+
+    /* ──────────────────────────────
+       TYPEWRITER
+    ────────────────────────────── */
+    .typewriter {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid var(--red);
+      animation: typing 3.5s steps(40, end) both, blink-caret 0.75s step-end infinite;
+    }
+
+    @keyframes typing {
+      from { width: 0; }
+      to   { width: 100%; }
+    }
+
+    @keyframes blink-caret {
+      0%, 100% { border-color: var(--red); }
+      50%       { border-color: transparent; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAV ── -->
+  <nav>
+    <div class="nav-logo">A.<span>R.</span>I.<span>E.</span>L</div>
+    <ul class="nav-links">
+      <li><a href="#sobre">Sobre</a></li>
+      <li><a href="#arquitetura">Arquitetura</a></li>
+      <li><a href="#funcionalidades">Funções</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+      <li><a href="#criador">Criador</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section id="hero">
+    <div class="hero-badge mono">v1.0.0 — fase de testes ativo</div>
+
+    <h1 class="hero-title">
+      <span class="letter-a">A</span>.R.I.E.L
+    </h1>
+
+    <p class="hero-subtitle-full mono">
+      <span>A</span>ssistente de <span>R</span>espostas <span>I</span>nteligentes com <span>E</span>xecução <span>L</span>ocal
+    </p>
+
+    <div class="stark-quote">
+      <blockquote>
+        "A tecnologia não é o problema. O problema é sempre o humano que está por trás dela — ou o humano que não está."
+      </blockquote>
+      <cite>— Tony Stark</cite>
+    </div>
+
+    <div class="hero-cta">
+      <a href="https://github.com" class="btn btn-primary mono">ACESSAR GITHUB</a>
+      <a href="#arquitetura" class="btn btn-secondary mono">VER ARQUITETURA</a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="num orb">5</span>
+        <span class="lbl mono">Camadas Core</span>
+      </div>
+      <div class="hero-stat">
+        <span class="num orb">100%</span>
+        <span class="lbl mono">Execução Local</span>
+      </div>
+      <div class="hero-stat">
+        <span class="num orb">pt-BR</span>
+        <span class="lbl mono">Idioma Nativo</span>
+      </div>
+      <div class="hero-stat">
+        <span class="num orb">v1</span>
+        <span class="lbl mono">Versão Atual</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="hline"></div>
+
+  <!-- ── SOBRE ── -->
+  <section id="sobre">
+    <div class="container">
+      <div class="sec-header">
+        <span class="sec-code mono">01 //</span>
+        <h2 class="sec-title">Missão</h2>
+        <div class="sec-line"></div>
+      </div>
+
+      <div class="sobre-grid">
+        <div class="sobre-text">
+          <h3>O que é A.R.I.E.L?</h3>
+          <p>
+            A.R.I.E.L é um assistente pessoal inteligente <strong>100% local</strong>, 
+            inspirado no J.A.R.V.I.S do Universo Marvel. Sem enviar dados para nuvem, 
+            sem rastreamento — sua privacidade é a prioridade absoluta.
+          </p>
+          <p>
+            Com suporte a <strong>comandos de voz em português</strong>, 
+            reconhecimento de intenções e execução automática de ações no sistema operacional, 
+            o A.R.I.E.L traz a experiência de um assistente de IA privado para sua máquina.
+          </p>
+          <p>
+            Desenvolvido por um estudante do <strong>IFES — Campus Serra</strong>, 
+            o projeto nasceu da visão de democratizar a inteligência artificial 
+            de forma segura, acessível e offline.
+          </p>
+        </div>
+
+        <div class="hud-panel">
+          <div class="hud-row">
+            <span class="hud-key">STATUS</span>
+            <span class="hud-val online">ONLINE — FASE DE TESTES</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-key">VERSÃO</span>
+            <span class="hud-val">v1.0.0 — 2026.04.10</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-key">INÍCIO</span>
+            <span class="hud-val">21 / 02 / 2026</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-key">IDIOMA</span>
+            <span class="hud-val">pt-BR (nativo)</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-key">PLATAFORMA</span>
+            <span class="hud-val">Windows · Linux · macOS</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-key">PRIVACIDADE</span>
+            <span class="hud-val gold">TOTAL — SEM NUVEM</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-key">LICENÇA</span>
+            <span class="hud-val">MIT Open Source</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-key">RUNTIME</span>
+            <span class="hud-val">Python 3.9+</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="hline"></div>
+
+  <!-- ── ARQUITETURA ── -->
+  <section id="arquitetura">
+    <div class="container">
+      <div class="sec-header">
+        <span class="sec-code mono">02 //</span>
+        <h2 class="sec-title">Arquitetura</h2>
+        <div class="sec-line"></div>
+      </div>
+
+      <div class="arch-layers">
+        <div class="arch-layer">
+          <div class="arch-num">01</div>
+          <div class="arch-info">
+            <h4>ENTRADA — Captura de Voz</h4>
+            <p>Captura áudio do microfone, detecta wake words "Jarvis" ou "Ariel" e transcreve a fala para texto.</p>
+          </div>
+          <div class="arch-tech">WHISPER · GOOGLE STT</div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-num">02</div>
+          <div class="arch-info">
+            <h4>CÉREBRO — Orquestrador Central</h4>
+            <p>Coordena o pipeline completo: distribui intenções, aciona ações e gerencia o ciclo de vida da sessão.</p>
+          </div>
+          <div class="arch-tech">brain.py · Python</div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-num">03</div>
+          <div class="arch-info">
+            <h4>INTENÇÕES — Processamento NLP</h4>
+            <p>Interpreta o texto transcrito, identifica comandos por matching e extrai parâmetros da ação desejada.</p>
+          </div>
+          <div class="arch-tech">intent.py · NLP</div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-num">04</div>
+          <div class="arch-info">
+            <h4>EXECUÇÃO — Ações no Sistema</h4>
+            <p>Executa comandos reais no sistema operacional: navegar, pesquisar, abrir aplicativos, coletar métricas.</p>
+          </div>
+          <div class="arch-tech">system.py · OS API</div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-num">05</div>
+          <div class="arch-info">
+            <h4>MEMÓRIA — Contexto Persistente</h4>
+            <p>Armazena histórico de sessão (curto prazo) e preferências do usuário (longo prazo) em JSON local.</p>
+          </div>
+          <div class="arch-tech">memory.json · SQLite (em breve)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="hline"></div>
+
+  <!-- ── FUNCIONALIDADES ── -->
+  <section id="funcionalidades">
+    <div class="container">
+      <div class="sec-header">
+        <span class="sec-code mono">03 //</span>
+        <h2 class="sec-title">Capacidades</h2>
+        <div class="sec-line"></div>
+      </div>
+
+      <div class="feat-grid">
+
+        <div class="feat-card">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
+          </div>
+          <h4>RECONHECIMENTO DE VOZ</h4>
+          <p>Captura contínua com calibração para ruído ambiente. Suporte total ao português brasileiro via Google STT e Whisper.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          </div>
+          <h4>WAKE WORD</h4>
+          <p>Aguarda passivamente por "Jarvis" ou "Ariel" antes de processar. Sem escuta ativa o tempo todo.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h4>SÍNTESE DE FALA</h4>
+          <p>Respostas em áudio natural via pyttsx3. Velocidade, volume e idioma configuráveis no settings.json.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <h4>CONTROLE DO SISTEMA</h4>
+          <p>Abre navegador, pesquisa na web, lança aplicativos e coleta informações de CPU, RAM e SO.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          </div>
+          <h4>100% LOCAL</h4>
+          <p>Nenhum dado sai da sua máquina. Sem API keys obrigatórias, sem logs em nuvem, sem telemetria.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <h4>MEMÓRIA PERSISTENTE</h4>
+          <p>Aprende e recorda preferências entre sessões. Rastreia frequência de comandos para futura personalização.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="hline"></div>
+
+  <!-- ── ROADMAP ── -->
+  <section id="roadmap">
+    <div class="container">
+      <div class="sec-header">
+        <span class="sec-code mono">04 //</span>
+        <h2 class="sec-title">Roadmap</h2>
+        <div class="sec-line"></div>
+      </div>
+
+      <div class="roadmap-list">
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot">
+            <div class="dot done"></div>
+            <span class="road-phase mono">FASE 1</span>
+          </div>
+          <div class="roadmap-content">
+            <h4>Base Operacional</h4>
+            <p>Captura de voz, síntese de fala, processamento de intenções, execução de ações básicas e sistema de memória local.</p>
+            <span class="tag done">COMPLETO</span>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot">
+            <div class="dot wip"></div>
+            <span class="road-phase mono">FASE 2</span>
+          </div>
+          <div class="roadmap-content">
+            <h4>Inteligência e NLP Avançado</h4>
+            <p>Integração com LLMs (GPT-4, Claude), compreensão de contexto conversacional e respostas mais naturais e humanizadas.</p>
+            <span class="tag wip">EM ANDAMENTO</span>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot">
+            <div class="dot todo"></div>
+            <span class="road-phase mono">FASE 3</span>
+          </div>
+          <div class="roadmap-content">
+            <h4>Automação Completa do Sistema</h4>
+            <p>Controle abrangente do SO, execução de scripts personalizados e agendamento inteligente de tarefas.</p>
+            <span class="tag soon">PLANEJADO</span>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot">
+            <div class="dot todo"></div>
+            <span class="road-phase mono">FASE 4</span>
+          </div>
+          <div class="roadmap-content">
+            <h4>Integrações Externas</h4>
+            <p>Google Calendar, Notion, Discord, Spotify — conectando o assistente ao seu ecossistema digital.</p>
+            <span class="tag soon">PLANEJADO</span>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-dot">
+            <div class="dot todo"></div>
+            <span class="road-phase mono">FASE 5</span>
+          </div>
+          <div class="roadmap-content">
+            <h4>Interface Visual — HUD Jarvis</h4>
+            <p>Interface gráfica estilo HUD do Tony Stark, detecção contínua de wake word e personalidade adaptativa.</p>
+            <span class="tag soon">VISÃO</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="hline"></div>
+
+  <!-- ── CRIADOR ── -->
+  <section id="criador">
+    <div class="container">
+      <div class="sec-header">
+        <span class="sec-code mono">05 //</span>
+        <h2 class="sec-title">O Criador</h2>
+        <div class="sec-line"></div>
+      </div>
+
+      <div class="creator-wrap">
+        <div class="creator-card">
+          <div class="creator-avatar">AT</div>
+          <div class="creator-name">Arthur Taíque</div>
+          <div class="creator-role mono">Desenvolvedor · Criador do A.R.I.E.L</div>
+
+          <div class="creator-links">
+            <a href="https://instagram.com/taique_" target="_blank" class="creator-link">
+              <span class="lk-icon">📸</span>
+              <span class="lk-label mono">@taique_</span>
+              <span style="margin-left:auto; font-size:0.7rem; opacity:0.5;">instagram</span>
+            </a>
+            <a href="https://github.com" target="_blank" class="creator-link">
+              <span class="lk-icon">⌨</span>
+              <span class="lk-label mono">github</span>
+              <span style="margin-left:auto; font-size:0.7rem; opacity:0.5;">repositório</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="creator-bio">
+          <h3>Motivação e Visão</h3>
+          <p>
+            Estudante de <strong>Informática no Instituto Federal do Espírito Santo — Campus Serra</strong>, 
+            Arthur Taíque iniciou o projeto A.R.I.E.L em <strong>21 de fevereiro de 2026</strong> movido pela 
+            visão de criar algo que vai além de um simples chatbot.
+          </p>
+          <p>
+            Inspirado pela ficção científica e pelo personagem Tony Stark, o objetivo é desenvolver 
+            um assistente verdadeiramente pessoal: <strong>local, privado e inteligente</strong> — 
+            que aprende com o usuário, executa tarefas reais e evolui continuamente.
+          </p>
+          <p>
+            O projeto é desenvolvido de forma independente, com código aberto, 
+            para que outros estudantes possam aprender, contribuir e se inspirar.
+          </p>
+
+          <div class="creator-badges">
+            <span class="badge badge-red">IFES — Campus Serra</span>
+            <span class="badge badge-gold">Informática</span>
+            <span class="badge badge-gray">Open Source</span>
+            <span class="badge badge-gray">Python Developer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="footer-logo">A.R.I.E.L</div>
+    <div class="footer-sub mono">Assistente de Respostas Inteligentes com Execução Local</div>
+    <div class="footer-meta mono">
+      Desenvolvido por <a href="https://instagram.com/taique_" target="_blank">Arthur Taíque</a>
+      &nbsp;·&nbsp; IFES Campus Serra &nbsp;·&nbsp; v1.0.0 &nbsp;·&nbsp; MIT License
+    </div>
+  </footer>
+
+</body>
+</html>
